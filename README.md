@@ -1,0 +1,2 @@
+# Amayado
+Posterity of `PlainShop`.
