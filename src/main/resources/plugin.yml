@@ -1,0 +1,17 @@
+name: Droplets
+version: ${version}
+author: Sapphira Tempest
+description: Posterity of PlainShop.
+
+main: io.sn.droplets.DropletsCore
+depend:
+  - Slimefun
+  - CommandAPI
+  - ItemsAdder
+  - Vault
+
+api-version: 1.20
+
+libraries:
+  - org.jetbrains.kotlin:kotlin-stdlib:1.8.20
+  - com.alibaba.fastjson2:fastjson2:2.0.35
