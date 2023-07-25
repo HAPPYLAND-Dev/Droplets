@@ -91,8 +91,8 @@ object GuiUtils {
                     return@addItem false
                 }
 
-                val resp: EconomyResponse = DropletsCore.econ.depositPlayer(p, content[i].second)
                 val tamount = inv.getItemInSlot(slot + 9).amount
+                val resp: EconomyResponse = DropletsCore.econ.withdrawPlayer(p, content[i].second * tamount)
                 if (p.inventory.firstEmpty() == -1) {
                     plug.sendmsg(p, "<red>无法购买, 请检查背包空间")
                 } else if (resp.transactionSuccess()) {
@@ -100,7 +100,6 @@ object GuiUtils {
                     plug.sendmsg(p, "<green>成功购买: <white>${ItemNameUtils.getItemName(item)} <white>x$tamount")
                 } else {
                     plug.sendmsg(p, "<red>无法购买, 请检查账户余额")
-                    p.closeInventory()
                 }
                 false
             }
