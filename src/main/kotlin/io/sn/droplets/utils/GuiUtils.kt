@@ -24,7 +24,7 @@ object GuiUtils {
         val value = amt * price
         return ItemStack(Material.NAME_TAG).apply {
             editMeta {
-                it.displayName(DropletsCore.mini("<!italic><gradient:white:yellow>[<bold> $amt </bold>] [<bold> $value </bold>]</gradient>"))
+                it.displayName(DropletsCore.mini("<!italic><white>购买个数: $amt <gray>($value)"))
                 it.lore(
                     mutableListOf(
                         DropletsCore.mini(""),
@@ -32,6 +32,7 @@ object GuiUtils {
                         DropletsCore.mini("<!italic><yellow>右键 <white>减少 1 个"),
                         DropletsCore.mini("<!italic><yellow>Shift + 左键 <white>增加 8 个"),
                         DropletsCore.mini("<!italic><yellow>Shift + 右键 <white>减少 8 个"),
+                        DropletsCore.mini("<!italic><yellow>单击物品 <white>确定购买")
                     )
                 )
             }
