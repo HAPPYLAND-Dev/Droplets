@@ -22,7 +22,7 @@ object GuiUtils {
 
     private fun amountIndicator(amt: Int, price: Double): ItemStack {
         val value = amt * price
-        return UI_BACKGROUND.clone().apply {
+        return ItemStack(Material.NAME_TAG).apply {
             editMeta {
                 it.displayName(DropletsCore.mini("<!italic><gradient:white:yellow>[<bold> $amt </bold>] [<bold> $value </bold>]</gradient>"))
                 it.lore(
