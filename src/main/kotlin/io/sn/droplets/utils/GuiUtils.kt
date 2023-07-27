@@ -128,7 +128,12 @@ object GuiUtils {
             }
         }
 
-        (27..35).forEach {
+        (content.size..8).forEach {
+            inv.addItem(it, UI_BACKGROUND, ChestMenuUtils.getEmptyClickHandler())
+            inv.addItem(it + 9, UI_BACKGROUND, ChestMenuUtils.getEmptyClickHandler())
+        }
+
+        (18..35).forEach {
             when (it) {
                 28 -> {
                     inv.addItem(it,
