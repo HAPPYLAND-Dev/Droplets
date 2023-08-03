@@ -4,6 +4,7 @@ package io.sn.droplets.utils
 
 import io.github.thebusybiscuit.slimefun4.libraries.dough.items.CustomItemStack
 import io.github.thebusybiscuit.slimefun4.utils.ChestMenuUtils
+import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils
 import io.sn.droplets.DropletsCore
 import io.sn.slimefun4.ChestMenuTexture
 import me.mrCookieSlime.CSCoreLibPlugin.general.Inventory.ChestMenu
@@ -20,21 +21,25 @@ object GuiUtils {
     private val ARROW_LEFT: ItemStack = CustomItemStack(Material.GRAY_STAINED_GLASS_PANE, " ").setCustomModel(4008)
     private val ARROW_RIGHT: ItemStack = CustomItemStack(Material.GRAY_STAINED_GLASS_PANE, " ").setCustomModel(4009)
 
-    private fun amountIndicator(amt: Int, price: Double): ItemStack {
+    private fun amountIndicator(amt: Int, price: Double, type: ShopType): ItemStack {
         val value = amt * price
+        val action = if (type == ShopType.SELL) "购买" else "出售"
+        val color = if (type == ShopType.SELL) "yellow" else "green"
         return ItemStack(Material.NAME_TAG).apply {
             editMeta {
-                it.displayName(DropletsCore.mini("<!italic><white>购买个数: $amt <gray>($value)"))
-                it.lore(
-                    mutableListOf(
-                        DropletsCore.mini(""),
-                        DropletsCore.mini("<!italic><yellow>左键 <white>增加 1 个"),
-                        DropletsCore.mini("<!italic><yellow>右键 <white>减少 1 个"),
-                        DropletsCore.mini("<!italic><yellow>Shift + 左键 <white>增加 8 个"),
-                        DropletsCore.mini("<!italic><yellow>Shift + 右键 <white>减少 8 个"),
-                        DropletsCore.mini("<!italic><yellow>单击物品 <white>确定购买")
-                    )
-                )
+                it.displayName(DropletsCore.mini("<!italic><white>${action}个数: $amt <gray>($value)"))
+                it.lore(mutableListOf(
+                    DropletsCore.mini(""),
+                    DropletsCore.mini("<!italic><$color>左键 <white>增加 1 个"),
+                    DropletsCore.mini("<!italic><$color>右键 <white>减少 1 个"),
+                    DropletsCore.mini("<!italic><$color>Shift + 左键 <white>增加 8 个"),
+                    DropletsCore.mini("<!italic><$color>Shift + 右键 <white>减少 8 个"),
+                    DropletsCore.mini("<!italic><$color>单击物品 <white>确定${action}")
+                ).apply {
+                    if (type == ShopType.BUY) {
+                        add(DropletsCore.mini("<!italic><green>Shift + 单击物品 <white>一键出售所有该物品"))
+                    }
+                })
             }
         }
     }
@@ -42,10 +47,12 @@ object GuiUtils {
     /**
      * @param page zero-indexed page number
      */
-    private fun drawGui(plug: DropletsCore, id: String, page: Int): Triple<List<Pair<ItemStack, Double>>, PageState, String?> {
+    private fun drawGui(plug: DropletsCore, id: String, page: Int): Quadruple<List<Pair<ItemStack, Double>>, PageState, String?, ShopType> {
         val stock = StorageUtils.getStock(plug, id)
         val items = stock.first
         val name = stock.second
+        val type = stock.third
+
         val totalPage = if (items.size % 9 == 0) items.size / 9 else items.size / 9 + 1
 
         if (totalPage == 0) throw Exception("该货架没有商品")
@@ -66,7 +73,7 @@ object GuiUtils {
 
         if (totalPage == 1) state = PageState.ONLY_ONE
 
-        return Triple(items.slice(9 * page until endIdx), state, name)
+        return Quadruple(items.slice(9 * page until endIdx), state, name, type)
     }
 
     private fun restrictAmount(type: Material, tamount: Int): Int {
@@ -75,14 +82,44 @@ object GuiUtils {
         return tamount
     }
 
+    private fun getAmountByItemInInv(player: Player, itemStack: ItemStack): Int = player.inventory.sumOf {
+        if (SlimefunUtils.isItemSimilar(it, itemStack, true)) {
+            it.amount
+        } else 0
+    }
+
+    private fun removeItemWithAmountFromInv(player: Player, item: ItemStack, amount: Int): Boolean {
+        val targets = mutableListOf<Pair<Int, ItemStack>>()
+        player.inventory.forEachIndexed { index, itm ->
+            if (SlimefunUtils.isItemSimilar(itm, item, true)) {
+                targets.add(Pair(index, itm.clone()))
+            }
+        }
+
+        if (targets.size == 0) return false
+        if (targets.sumOf { it.second.amount } < amount) return false
+
+        var tamount = amount
+        targets.forEach {
+            val slot = it.first
+            val itm = it.second
+
+            val toRemove = tamount.coerceAtMost(itm.amount)
+            player.inventory.getItem(slot)?.apply { this.amount -= toRemove }
+            tamount -= toRemove
+        }
+        return true
+    }
+
     /**
      * @param page zero-indexed page number
      */
     fun openGuiFor(plug: DropletsCore, plr: Player, id: String, page: Int) {
-        val (content, state, name) = drawGui(plug, id, page)
+        val (content, state, name, type) = drawGui(plug, id, page)
         val desc = LegacyComponentSerializer.legacyAmpersand().serialize(DropletsCore.mini(name!!))
         val pageNum = if (state == PageState.ONLY_ONE) "" else "&7[&8${page + 1}&7]"
-        val inv = ChestMenu("$desc $pageNum", ChestMenuTexture("dumortierite", "droplets"))
+        val typeName = if (type == ShopType.SELL) "&6出售" else "&2收购"
+        val inv = ChestMenu("&8[$typeName&8] $desc $pageNum", ChestMenuTexture("dumortierite", "droplets"))
 
         content.indices.forEach { i ->
             inv.addItem(i, content[i].first) { p, slot, item, action ->
@@ -92,23 +129,54 @@ object GuiUtils {
                     return@addItem false
                 }
 
+                if (type == ShopType.BUY && action.isShiftClicked && !action.isRightClicked) {
+                    val tamount = getAmountByItemInInv(plr, item)
+                    val resp: EconomyResponse = DropletsCore.econ.depositPlayer(p, content[i].second * tamount)
+                    val toBuy = item.clone().apply { amount = tamount }
+                    if (!removeItemWithAmountFromInv(p, item, tamount)) {
+                        plug.sendmsg(p, "<red>你没有这个物品")
+                    } else if (resp.transactionSuccess()) {
+                        p.inventory.remove(toBuy)
+                        plug.sendmsg(p, "<green>成功出售: <white>${ItemNameUtils.getItemName(item)} <white>x$tamount")
+                    } else {
+                        plug.sendmsg(p, "<red>出售时出现错误")
+                    }
+                    return@addItem false
+                }
+
                 val tamount = inv.getItemInSlot(slot + 9).amount
-                val resp: EconomyResponse = DropletsCore.econ.withdrawPlayer(p, content[i].second * tamount)
-                if (p.inventory.firstEmpty() == -1) {
-                    plug.sendmsg(p, "<red>无法购买, 请检查背包空间")
-                } else if (resp.transactionSuccess()) {
-                    p.inventory.addItem(item.clone().apply { amount = tamount })
-                    plug.sendmsg(p, "<green>成功购买: <white>${ItemNameUtils.getItemName(item)} <white>x$tamount")
-                } else {
-                    plug.sendmsg(p, "<red>无法购买, 请检查账户余额")
+                when (type) {
+                    ShopType.SELL -> {
+                        val resp: EconomyResponse = DropletsCore.econ.withdrawPlayer(p, content[i].second * tamount)
+                        if (p.inventory.firstEmpty() == -1) {
+                            plug.sendmsg(p, "<red>无法购买, 请检查背包空间")
+                        } else if (resp.transactionSuccess()) {
+                            p.inventory.addItem(item.clone().apply { amount = tamount })
+                            plug.sendmsg(p, "<green>成功购买: <white>${ItemNameUtils.getItemName(item)} <white>x$tamount")
+                        } else {
+                            plug.sendmsg(p, "<red>无法购买, 请检查账户余额")
+                        }
+                    }
+
+                    ShopType.BUY -> {
+                        val resp: EconomyResponse = DropletsCore.econ.depositPlayer(p, content[i].second * tamount)
+                        val toBuy = item.clone().apply { amount = tamount }
+                        if (!removeItemWithAmountFromInv(p, item, tamount)) {
+                            plug.sendmsg(p, "<red>你没有这些物品")
+                        } else if (resp.transactionSuccess()) {
+                            p.inventory.remove(toBuy)
+                            plug.sendmsg(p, "<green>成功出售: <white>${ItemNameUtils.getItemName(item)} <white>x$tamount")
+                        } else {
+                            plug.sendmsg(p, "<red>出售时出现错误")
+                        }
+                    }
                 }
                 false
             }
-            inv.addItem(i + 9, amountIndicator(1, content[i].second)) { _, _, item, action ->
+            inv.addItem(i + 9, amountIndicator(1, content[i].second, type)) { _, _, item, action ->
                 val amount = item.amount
                 val tamount = restrictAmount(
-                    item.type,
-                    if (!action.isShiftClicked) {
+                    item.type, if (!action.isShiftClicked) {
                         if (!action.isRightClicked) {
                             amount + 1
                         } else {
@@ -122,7 +190,7 @@ object GuiUtils {
                         }
                     }
                 )
-                item.itemMeta = amountIndicator(tamount, content[i].second).itemMeta
+                item.itemMeta = amountIndicator(tamount, content[i].second, type).itemMeta
                 item.amount = tamount
                 false
             }
