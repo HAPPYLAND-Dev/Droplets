@@ -36,3 +36,9 @@ java {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+tasks.processResources {
+    filesMatching("plugin.yml") {
+        expand(['version': project.version])
+    }
+}
