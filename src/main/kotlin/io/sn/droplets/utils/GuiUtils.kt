@@ -32,9 +32,9 @@ object GuiUtils {
                     DropletsCore.mini(""),
                     DropletsCore.mini("<!italic><$color>左键 <white>增加 1 个"),
                     DropletsCore.mini("<!italic><$color>右键 <white>减少 1 个"),
+                    DropletsCore.mini("<!italic><$color>单击物品 <white>确定${action}"),
                     DropletsCore.mini("<!italic><$color>Shift + 左键 <white>增加 8 个"),
-                    DropletsCore.mini("<!italic><$color>Shift + 右键 <white>减少 8 个"),
-                    DropletsCore.mini("<!italic><$color>单击物品 <white>确定${action}")
+                    DropletsCore.mini("<!italic><$color>Shift + 右键 <white>减少 8 个")
                 ).apply {
                     if (type == ShopType.BUY) {
                         add(DropletsCore.mini("<!italic><green>Shift + 单击物品 <white>一键出售所有该物品"))
@@ -119,7 +119,7 @@ object GuiUtils {
         val desc = LegacyComponentSerializer.legacyAmpersand().serialize(DropletsCore.mini(name!!))
         val pageNum = if (state == PageState.ONLY_ONE) "" else "&7[&8${page + 1}&7]"
         val typeName = if (type == ShopType.SELL) "&6出售" else "&2收购"
-        val inv = ChestMenu("&8[$typeName&8] $desc $pageNum", ChestMenuTexture("dumortierite", "droplets"))
+        val inv = ChestMenu("$typeName $desc $pageNum", ChestMenuTexture("dumortierite", "droplets"))
 
         content.indices.forEach { i ->
             inv.addItem(i, content[i].first) { p, slot, item, action ->
