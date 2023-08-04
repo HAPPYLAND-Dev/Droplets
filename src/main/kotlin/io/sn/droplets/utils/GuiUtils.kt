@@ -8,6 +8,7 @@ import io.github.thebusybiscuit.slimefun4.utils.SlimefunUtils
 import io.sn.droplets.DropletsCore
 import io.sn.slimefun4.ChestMenuTexture
 import me.mrCookieSlime.CSCoreLibPlugin.general.Inventory.ChestMenu
+import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import net.milkbowl.vault.economy.EconomyResponse
 import org.bukkit.Material
@@ -29,12 +30,13 @@ object GuiUtils {
             editMeta {
                 it.displayName(DropletsCore.mini("<!italic><white>${action}个数: $amt <gray>($value)"))
                 it.lore(mutableListOf(
-                    DropletsCore.mini(""),
+                    Component.text(""),
                     DropletsCore.mini("<!italic><$color>左键 <white>增加 1 个"),
                     DropletsCore.mini("<!italic><$color>右键 <white>减少 1 个"),
-                    DropletsCore.mini("<!italic><$color>单击物品 <white>确定${action}"),
                     DropletsCore.mini("<!italic><$color>Shift + 左键 <white>增加 8 个"),
-                    DropletsCore.mini("<!italic><$color>Shift + 右键 <white>减少 8 个")
+                    DropletsCore.mini("<!italic><$color>Shift + 右键 <white>减少 8 个"),
+                    Component.text(""),
+                    DropletsCore.mini("<!italic><$color>单击物品 <white>确定${action}"),
                 ).apply {
                     if (type == ShopType.BUY) {
                         add(DropletsCore.mini("<!italic><green>Shift + 单击物品 <white>一键出售所有该物品"))
@@ -118,8 +120,8 @@ object GuiUtils {
         val (content, state, name, type) = drawGui(plug, id, page)
         val desc = LegacyComponentSerializer.legacyAmpersand().serialize(DropletsCore.mini(name!!))
         val pageNum = if (state == PageState.ONLY_ONE) "" else "&7[&8${page + 1}&7]"
-        val typeName = if (type == ShopType.SELL) "&6出售" else "&2收购"
-        val inv = ChestMenu("$typeName $desc $pageNum", ChestMenuTexture("dumortierite", "droplets"))
+        val typeName = if (type == ShopType.SELL) "&e(&6&l出售&e)" else "&a(&2&l收购&a)"
+        val inv = ChestMenu("$typeName &8$desc $pageNum", ChestMenuTexture("dumortierite", "droplets"))
 
         content.indices.forEach { i ->
             inv.addItem(i, content[i].first) { p, slot, item, action ->
