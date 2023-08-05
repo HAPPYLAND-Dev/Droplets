@@ -120,8 +120,9 @@ object GuiUtils {
         val (content, state, name, type) = drawGui(plug, id, page)
         val desc = LegacyComponentSerializer.legacyAmpersand().serialize(DropletsCore.mini(name!!))
         val pageNum = if (state == PageState.ONLY_ONE) "" else "&7[&8${page + 1}&7]"
-        val typeName = if (type == ShopType.SELL) "&e(&6&l出售&e)" else "&a(&2&l收购&a)"
-        val inv = ChestMenu("$typeName &8$desc $pageNum", ChestMenuTexture("dumortierite", "droplets"))
+        val typeName = if (type == ShopType.SELL) "&6&l" else "&2&l"
+        val inv = ChestMenu("$typeName\uD83D\uDED2 &8| $desc $pageNum", ChestMenuTexture("dumortierite", "droplets"))
+        // <b><dark_green>🛒</b> | 测试内容 <dark_gray>[<gray>1</gray>]
 
         content.indices.forEach { i ->
             inv.addItem(i, content[i].first) { p, slot, item, action ->
