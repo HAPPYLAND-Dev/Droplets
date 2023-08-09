@@ -179,7 +179,7 @@ object GuiUtils {
             inv.addItem(i + 9, amountIndicator(1, content[i].second, type)) { _, _, item, action ->
                 val amount = item.amount
                 val tamount = restrictAmount(
-                    item.type, if (!action.isShiftClicked) {
+                    inv.getItemInSlot(i).type, if (!action.isShiftClicked) {
                         if (!action.isRightClicked) {
                             amount + 1
                         } else {
